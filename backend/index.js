@@ -1,6 +1,7 @@
 const express = require("express");
-const morgan = require("morgan");
 const app = express();
+const morgan = require("morgan");
+const cors = require("cors");
 
 let persons = [
   {
@@ -30,26 +31,29 @@ let persons = [
  */
 const generateId = () => {
   const existingIds = new Set(persons.map((p) => p.id));
-  const randomId = Math.floor(Math.random() * 100000);
 
   let newId;
   do {
-    const newId = Math.floor(Math.random() * 100000);
+    newId = Math.floor(Math.random() * 100000);
   } while (existingIds.has(newId));
 
   return newId;
 };
 
+// 解决浏览器的同源策略问题
+app.use(cors());
 // 每当 Express 收到 HTTP GET 请求时，
 // 它都会首先检查 dist 目录是否包含与请求地址对应的文件。
 // 如果找到正确的文件，Express 将返回该文件。
-app.use(express.static('dist'))
+app.use(express.static("dist"));
 
 // 用于解析请求体（body）中的 JSON 数据
 app.use(express.json());
 
 // 创建自定义的 morgan token，用于记录请求体
-morgan.token("body", (req) => JSON.stringify(req.body));
+morgan.token("body", (req, res) => {
+  return req.method === "POST" ? JSON.stringify(req.body) : null;
+});
 // 使用 morgan 中间件，记录简洁的请求日志
 // 格式类似：POST /api/persons 200 33 - 3.261 ms {"name":"Diu Diu","number":"110"}
 app.use(
@@ -124,7 +128,7 @@ app.post("/api/persons", (request, response) => {
 });
 
 // 监听 3001 端口
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
