@@ -1,4 +1,5 @@
 const express = require("express");
+const morgan = require("morgan");
 const app = express();
 
 let persons = [
@@ -41,6 +42,14 @@ const generateId = () => {
 
 // 用于解析请求体（body）中的 JSON 数据
 app.use(express.json());
+
+// 创建自定义的 morgan token，用于记录请求体
+morgan.token("body", (req) => JSON.stringify(req.body));
+// 使用 morgan 中间件，记录简洁的请求日志
+// 格式类似：POST /api/persons 200 33 - 3.261 ms {"name":"Diu Diu","number":"110"}
+app.use(
+  morgan(":method :url :status :res[content-length] - :response-time ms :body")
+);
 
 app.get("/", (request, response) => {
   response.send("<h1>Hello World!</h1>");
