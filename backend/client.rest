@@ -7,5 +7,15 @@ Content-Type: application/json
 
 {
     "name": "Diu Diu",
-    "number": "110"
+    "number": "1103"
+}
+
+####
+
+PUT http://localhost:3001/api/persons/664a4e1c6727f58ba81203c2
+Content-Type: application/json
+
+{
+    "name": "Diu Diu",
+    "number": "11034"
 }

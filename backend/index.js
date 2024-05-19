@@ -151,7 +151,7 @@ app.put("/api/persons/:id", (request, response, next) => {
     number: request.body.number,
   };
 
-  Note.findByIdAndUpdate(request.params.id, note, { new: true })
+  Person.findByIdAndUpdate(request.params.id, note, { new: true })
     .then((updatedNote) => {
       response.json(updatedNote);
     })
