@@ -6,44 +6,20 @@ const Person = require("./models/person");
 const morgan = require("morgan"); // HTTP 请求日志记录中间件
 const cors = require("cors"); // 处理跨域请求的中间件
 
-// 初始数据：模拟的联系人列表
-let persons = [
-  {
-    id: 1,
-    name: "Arto Hellas",
-    number: "040-123456",
-  },
-  {
-    id: 2,
-    name: "Ada Lovelace",
-    number: "39-44-5323523",
-  },
-  {
-    id: 3,
-    name: "Dan Abramov",
-    number: "12-43-234345",
-  },
-  {
-    id: 4,
-    name: "Mary Poppendieck",
-    number: "39-23-6423122",
-  },
-];
-
 /**
  * 生成唯一 ID 的函数
  * 避免重复 ID
  */
-const generateId = () => {
-  const existingIds = new Set(persons.map((p) => p.id)); // 创建一个包含所有现有 ID 的集合
+// const generateId = () => {
+//   const existingIds = new Set(persons.map((p) => p.id)); // 创建一个包含所有现有 ID 的集合
 
-  let newId;
-  do {
-    newId = Math.floor(Math.random() * 100000); // 生成一个随机 ID
-  } while (existingIds.has(newId)); // 确保 ID 不重复
+//   let newId;
+//   do {
+//     newId = Math.floor(Math.random() * 100000); // 生成一个随机 ID
+//   } while (existingIds.has(newId)); // 确保 ID 不重复
 
-  return newId;
-};
+//   return newId;
+// };
 
 // 解决浏览器的同源策略问题
 app.use(cors());
@@ -56,7 +32,7 @@ app.use(express.static("dist"));
 app.use(express.json());
 
 // 创建自定义的 morgan token，用于记录请求体
-morgan.token("body", (req, res) => {
+morgan.token("body", (req) => {
   return req.method === "POST" ? JSON.stringify(req.body) : null; // 仅记录 POST 请求的请求体
 });
 
@@ -77,10 +53,10 @@ app.get("/api/persons", (request, response) => {
 });
 
 // 信息页面
-app.get("/info", (request, response) => {
+app.get("/info", (_request, response) => {
   Person.countDocuments((err, count) => {
     if (err) {
-      res.status(500).send("Error fetching person count");
+      response.status(500).send("Error fetching person count");
     } else {
       const receivedTime = new Date(); // 当前时间
       const content = `Phonebook has info for ${count} people`; // 信息内容
@@ -109,7 +85,7 @@ app.get("/api/persons/:id", (request, response) => {
 // 删除特定 ID 的联系人
 app.delete("/api/persons/:id", (request, response, next) => {
   Person.findByIdAndDelete(request.params.id)
-    .then((result) => {
+    .then(() => {
       response.status(204).end();
     })
     .catch((error) => next(error));
