@@ -78,11 +78,16 @@ app.get("/api/persons", (request, response) => {
 
 // 信息页面
 app.get("/info", (request, response) => {
-  const receivedTime = new Date(); // 当前时间
-  const numberOfPhonebook = persons.length; // 联系人数量
-  const content = `Phonebook has info for ${numberOfPhonebook} people`; // 信息内容
-  // 返回包含联系人数量和当前时间的 HTML 内容
-  response.send(`<p>${content}</p><p>${receivedTime.toString()}</p>`);
+  Person.countDocuments((err, count) => {
+    if (err) {
+      res.status(500).send("Error fetching person count");
+    } else {
+      const receivedTime = new Date(); // 当前时间
+      const content = `Phonebook has info for ${count} people`; // 信息内容
+      // 返回包含联系人数量和当前时间的 HTML 内容
+      response.send(`<p>${content}</p><p>${receivedTime.toString()}</p>`);
+    }
+  });
 });
 
 // 获取特定 ID 的联系人信息
@@ -102,14 +107,16 @@ app.get("/api/persons/:id", (request, response) => {
 });
 
 // 删除特定 ID 的联系人
-app.delete("/api/persons/:id", (request, response) => {
-  const id = Number(request.params.id); // 从 URL 参数中获取 ID
-  persons = persons.filter((p) => p.id !== id); // 过滤掉该 ID 的联系人
-  response.status(204).end(); // 返回 204 无内容
+app.delete("/api/persons/:id", (request, response, next) => {
+  Person.findByIdAndDelete(request.params.id)
+    .then((result) => {
+      response.status(204).end();
+    })
+    .catch((error) => next(error));
 });
 
 // 添加新的联系人
-app.post("/api/persons", (request, response) => {
+app.post("/api/persons", (request, response, next) => {
   const body = request.body;
 
   // 如果 name 或 number 参数缺失
@@ -126,24 +133,44 @@ app.post("/api/persons", (request, response) => {
     });
   }
 
-  // 如果 name 已存在
-  if (persons.some((p) => p.name === body.name)) {
-    return response.status(409).json({
-      error: "name must be unique",
-    });
+  Person.findOneAndUpdate(
+    { name: body.name }, // 查询条件
+    { name: body.name, number: body.number }, // 更新的内容
+    { new: true, upsert: true } // 选项：返回更新后的文档，并在不存在时创建它
+  )
+    .then((person) => {
+      response.json(person);
+    })
+    .catch((error) => next(error));
+});
+
+// 更新联系人
+app.put("/api/persons/:id", (request, response, next) => {
+  const note = {
+    name: request.body.content,
+    number: request.body.number,
+  };
+
+  Note.findByIdAndUpdate(request.params.id, note, { new: true })
+    .then((updatedNote) => {
+      response.json(updatedNote);
+    })
+    .catch((error) => next(error));
+});
+
+// 错误处理的中间件
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message);
+
+  if (error.name === "CastError") {
+    return response.status(400).send({ error: "malformatted id" });
   }
 
-  // 创建新的联系人对象
-  const newPerson = new Person({
-    name: body.name, // 联系人姓名
-    number: body.number, // 联系人号码
-  });
+  next(error);
+};
 
-  // 添加到联系人列表
-  newPerson.save().then((savedPerson) => {
-    response.json(newPerson); // 返回新的联系人信息的 JSON
-  });
-});
+// this has to be the last loaded middleware, also all the routes should be registered before this!
+app.use(errorHandler);
 
 // 启动服务器，监听指定端口
 const PORT = process.env.PORT;
