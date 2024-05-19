@@ -118,25 +118,15 @@ app.delete("/api/persons/:id", (request, response, next) => {
 // 添加新的联系人
 app.post("/api/persons", (request, response, next) => {
   const body = request.body;
-
-  // 如果 name 或 number 参数缺失
-  if (!body.name || !body.number) {
-    return response.status(400).json({
-      error: "name or number missing",
-    });
-  }
-
-  // 如果 name 或 number 参数值为空
-  if (body.name.trim().length === 0 || body.number.trim().length === 0) {
-    return response.status(400).json({
-      error: "name or number cannot be empty",
-    });
-  }
-
+  // 验证由 mongoose 完成
   Person.findOneAndUpdate(
     { name: body.name }, // 查询条件
     { name: body.name, number: body.number }, // 更新的内容
-    { new: true, upsert: true } // 选项：返回更新后的文档，并在不存在时创建它
+    {
+      new: true, // 返回更新后的文档
+      upsert: true, // 如果不存在则创建新文档
+      runValidators: true, // 启用 Schema 验证器
+    }
   )
     .then((person) => {
       response.json(person);
@@ -151,7 +141,11 @@ app.put("/api/persons/:id", (request, response, next) => {
     number: request.body.number,
   };
 
-  Person.findByIdAndUpdate(request.params.id, note, { new: true })
+  Person.findByIdAndUpdate(request.params.id, note, {
+    new: true,
+    upsert: true,
+    runValidators: true,
+  })
     .then((updatedNote) => {
       response.json(updatedNote);
     })
